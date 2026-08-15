@@ -1,6 +1,7 @@
 # Extension & Analysis: Arbitration Failure, Not Perceptual Blindness
 
-Seminar project for Vision-Language Models, Saarland University.
+Project for Seminar-Multmodal Language Understanding, Saarland University.
+Author: Laxmiraman Gudewar
 
 This project replicates, extends and studies the Encoding-Grounding Dissociation framework from [Nooralahzadeh et al. (2026)](https://arxiv.org/abs/2604.09364), testing whether VLM failures on counterfactual images stem from **arbitration failure** (the model encodes the visual information correctly but its linguistic prior wins at the decision stage) rather than perceptual blindness.
 
