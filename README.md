@@ -9,22 +9,24 @@ This project replicates, extends and studies the Encoding-Grounding Dissociation
 
 | Attribute | LLaVA-1.5-7B | Qwen2-VL-7B |
 |---|---|---|
-| Color (replication) | 91.5% visual-win | 82.4% |
+| Color (replication) | **91.5%** visual-win | 82.4% |
 | Size (replication) | 49.2% | 56.3% |
 | MMStar Fine-grained (extension) | 70.6% | 75.8% |
 | MMStar Coarse (extension) | 71.3% | 73.5% |
 
-The core dissociation replicates: encoding strength weakly correlates with success (|ρ| < 0.11), while the final-layer logit gap is strongly predictive (ρ > 0.80).
+The core dissociation replicates: encoding strength weakly correlates with success (|rho| < 0.11), while the final-layer logit gap is strongly predictive (rho > 0.80).
 
 ## Repository Structure
 
 ```
-├── phase2_dataset_assembly.ipynb      # Dataset assembly (Color, Size from Visual-Counterfact)
-├── phase2_expansion.ipynb             # MMStar Fine-grained + Coarse expansion
-├── notebook_a_data_collection.ipynb   # MAC + dissociation data collection (Colab GPU)
-├── notebook_b_analysis.ipynb          # Analysis, plots, and results tables
-├── metadata.csv                       # Complete dataset metadata (1,689 samples)
-└── references.bib                     # Bibliography
+├── 1_dataset_assembly.ipynb          # Dataset assembly: Color + Size from Visual-Counterfact
+├── 2_dataset_expansion.ipynb         # MMStar Fine-grained + Coarse expansion via recolour pipeline
+├── 3a_llava_data_collection.ipynb    # MAC + dissociation data collection for LLaVA-1.5-7B (Colab GPU)
+├── 3b_qwen_data_collection.ipynb    # MAC + dissociation data collection for Qwen2-VL-7B (Colab GPU)
+├── 4_complete_analysis.ipynb         # Full analysis, plots, and results tables
+├── metadata.csv                      # Dataset metadata (1,689 samples across 6 attributes)
+├── references.bib                    # Bibliography
+└── README.md
 ```
 
 ## How to Replicate
@@ -35,37 +37,44 @@ The core dissociation replicates: encoding strength weakly correlates with succe
 - Google Colab account (free tier is sufficient)
 - HuggingFace account (for Visual-Counterfact dataset access)
 
-### Step 1: Dataset Assembly (local Jupyter)
+### Step 1: Dataset Assembly (local Jupyter, no GPU)
 
-1. Run `phase2_dataset_assembly.ipynb` to download and process the Visual-Counterfact dataset (Color: 493, Size: 727 samples). Requires HuggingFace authentication:
-   ```
-   huggingface-cli login
-   ```
-   The dataset identifier is `mgolov/Visual-Counterfact`.
+**Run `1_dataset_assembly.ipynb`** to download and process the Visual-Counterfact dataset.
+- Downloads Color (493 samples) and Size (727 samples) from HuggingFace (`mgolov/Visual-Counterfact`)
+- Requires HuggingFace authentication: `huggingface-cli login`
+- Produces the base `arbitration_dataset/` folder with images and `metadata.csv`
 
-2. Run `phase2_expansion.ipynb` to generate MMStar-derived attributes. This downloads MMStar (`Lin-Chen/MMStar`), filters perception categories, and applies the recolour pipeline to generate counterfactual-standard pairs (Fine-grained: 231, Coarse: 230 samples).
+**Run `2_dataset_expansion.ipynb`** to generate MMStar-derived attributes.
+- Downloads MMStar (`Lin-Chen/MMStar`) and filters perception categories
+- Applies the recolour pipeline to generate counterfactual-standard pairs
+- Produces Fine-grained (231 samples) and Coarse (230 samples) perception attributes
+- Updates `metadata.csv` with the new entries
 
-3. Output: `arbitration_dataset/` folder containing all images + `metadata.csv`. Zip this folder for upload to Google Drive.
+Output: zip the `arbitration_dataset/` folder and upload to Google Drive at `MyDrive/arbitration_project/`
 
-### Step 2: Data Collection (Google Colab, GPU required)
+### Step 2: Data Collection (Google Colab, T4 GPU required)
 
-1. Upload `arbitration_dataset.zip` to Google Drive at `MyDrive/arbitration_project/`.
+Upload `arbitration_dataset.zip` to Google Drive, then run each notebook on Colab with GPU runtime:
 
-2. Upload `notebook_a_data_collection.ipynb` to Google Colab. Set runtime to T4 GPU.
+**Run `3a_llava_data_collection.ipynb`** (~55 min on T4)
+- Loads LLaVA-1.5-7B in 8-bit quantisation
+- Runs MAC crossover + encoding-grounding dissociation on all 1,689 samples
+- Checkpoints to Drive after every sample (crash-safe)
+- Saves `llava_results.json` to Drive
 
-3. **Run 1 (LLaVA):** Set `MODEL_CHOICE = "llava"` at the top of the notebook. Run all cells. Takes approximately 55 minutes on a T4 GPU. Produces `llava_results.json` on Drive.
+**Run `3b_qwen_data_collection.ipynb`** (~45 min on T4)
+- Same pipeline for Qwen2-VL-7B-Instruct
+- Saves `qwen2vl_results.json` to Drive
 
-4. **Run 2 (Qwen2-VL):** Restart runtime, change `MODEL_CHOICE = "qwen2vl"`, run all cells. Takes approximately 45 minutes. Produces `qwen2vl_results.json` on Drive.
+Both models run one per session due to GPU memory constraints with 8-bit quantisation.
 
-Both models are loaded in 8-bit quantisation via BitsAndBytes. Results are checkpointed to Drive after every sample, so interrupted sessions resume automatically.
+### Step 3: Analysis (local Jupyter, no GPU)
 
-### Step 3: Analysis (local Jupyter)
-
-1. Download `llava_results.json` and `qwen2vl_results.json` from Google Drive.
-
-2. Place both files in the same directory as `notebook_b_analysis.ipynb`.
-
-3. Run all cells. Produces plots and tables in `analysis_main/` (4 main attributes) and `analysis_appendix/` (all 6 including Count and Shape).
+**Run `4_complete_analysis.ipynb`**
+- Place both `llava_results.json` and `qwen2vl_results.json` in the same folder
+- Generates all plots and tables in two output folders:
+  - `analysis_main/` — 4 main attributes (Color, Size, MMStar-FG, MMStar-Coarse)
+  - `analysis_appendix/` — all 6 attributes including Count and Shape
 
 ## Models
 
@@ -87,17 +96,16 @@ Both models are loaded in 8-bit quantisation via BitsAndBytes. Results are check
 
 ## Hardware Requirements
 
-- **Data collection (Notebook A):** GPU with 16GB+ VRAM. Tested on NVIDIA Tesla T4 (Google Colab free tier). Models loaded one per session due to memory constraints with 8-bit quantisation.
-- **All other notebooks:** CPU only. No GPU required for dataset assembly or analysis.
+- **Notebooks 3a and 3b:** GPU with 16GB+ VRAM (tested on NVIDIA Tesla T4, Google Colab free tier)
+- **All other notebooks:** CPU only, no GPU needed
 
-## Citation
-
-This project is based on:
+## Reference Paper
 
 ```bibtex
 @article{nooralahzadeh2026arbitration,
-  title={Arbitration Failure, Not Perceptual Blindness: How Vision-Language Models Resolve Visual-Linguistic Conflicts},
-  author={Nooralahzadeh, Farhad and Rohanian, Omid and Zhang, Yi and F{\"u}rst, Jonathan and Stockinger, Kurt},
+  title={Arbitration Failure, Not Perceptual Blindness},
+  author={Nooralahzadeh, Farhad and Rohanian, Omid and Zhang, Yi
+          and F{\"u}rst, Jonathan and Stockinger, Kurt},
   journal={arXiv preprint arXiv:2604.09364},
   year={2026}
 }
