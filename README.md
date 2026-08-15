@@ -96,7 +96,7 @@ Both models run one per session due to GPU memory constraints with 8-bit quantis
 
 ## Hardware Requirements
 
-- **Notebooks 3a and 3b:** GPU with 16GB+ VRAM (tested on NVIDIA Tesla T4, Google Colab free tier)
+- **Notebooks 3a and 3b:** GPU with 16GB+ VRAM (tested on NVIDIA Tesla T4, Google Colab)
 - **All other notebooks:** CPU only, no GPU needed
 
 ## Reference Paper
